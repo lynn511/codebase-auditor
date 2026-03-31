@@ -1,13 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-
-interface AuditMessage {
-  id: string; role: 'user' | 'assistant';
-  content: string; timestamp: Date;
-}
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import type { AuditMessage } from '@/lib/audit-types';
+import { API_URL } from '@/lib/config';
 
 export default function ChatInterface({ sessionId, repoName }: { sessionId: string; repoName: string }) {
   const [messages, setMessages] = useState<AuditMessage[]>([{

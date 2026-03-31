@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ingestRepo, type ScanStage } from '@/lib/github';
 import type { AuditReport } from '@/lib/audit-types';
+import { API_URL } from '@/lib/config';
 import type { ScanPhase } from './ScanProgress';
 import RepoInput from './RepoInput';
 import ScanProgress from './ScanProgress';
@@ -10,7 +11,6 @@ import ReportPanel from './ReportPanel';
 import ChatInterface from './ChatInterface';
 
 type AppPhase = 'idle' | 'scanning' | 'done' | 'error';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 function toScanPhase(s: ScanStage): ScanPhase {
   if (s === 'fetching-tree')  return 'fetching-tree';
