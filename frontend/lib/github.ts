@@ -133,15 +133,10 @@ export interface FilePayload {
   
     onStage('sampling-files');
     const toSample = selectFilesToSample(allPaths);
-    const sampledFiles: FilePayload[] = [];
-  
-    for (const path of toSample) {
-      const raw = await fetchFile(repo, path);
-      if (raw) {
-        // Truncate to ~1800 chars — enough context without blowing up the prompt
-        sampledFiles.push({ path, content: raw.slice(0, 1800) });
-      }
-    }
+    const rawResults = await Promise.all(toSample.map(path => fetchFile(repo, path)));
+    const sampledFiles: FilePayload[] = rawResults
+      .map((raw, i) => raw ? { path: toSample[i], content: raw.slice(0, 1800) } : null)
+      .filter((f): f is FilePayload => f !== null);
   
     onStage('ready');
   
