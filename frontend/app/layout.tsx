@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "elm's digital twin",
-  description: "ai career representing elm",
+  title: "Codebase Auditor",
+  description: "Analyze any GitHub repository for architecture, MLOps health, and improvement opportunities.",
 };
 
 export default function RootLayout({
