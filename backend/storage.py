@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from typing import List, Dict, Protocol, runtime_checkable
 
 from botocore.exceptions import ClientError
@@ -15,6 +16,9 @@ class ConversationRepo(Protocol):
     def save(self, session_id: str, messages: List[Dict]) -> None: ...
 
 
+SESSION_TTL_HOURS = int(os.getenv("SESSION_TTL_HOURS", "24"))
+
+
 class LocalRepo:
     def __init__(self, memory_dir: str) -> None:
         self._dir = memory_dir
@@ -24,10 +28,14 @@ class LocalRepo:
 
     def load(self, session_id: str) -> List[Dict]:
         p = self._path(session_id)
-        if os.path.exists(p):
-            with open(p, "r") as f:
-                return json.load(f)
-        return []
+        if not os.path.exists(p):
+            return []
+        age_hours = (time.time() - os.path.getmtime(p)) / 3600
+        if age_hours > SESSION_TTL_HOURS:
+            os.remove(p)
+            return []
+        with open(p, "r") as f:
+            return json.load(f)
 
     def save(self, session_id: str, messages: List[Dict]) -> None:
         os.makedirs(self._dir, exist_ok=True)
