@@ -12,13 +12,20 @@ from storage import make_repo
 
 load_dotenv()
 
+# ── Config ────────────────────────────────────────────────────────────────────
+BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "amazon.nova-lite-v1:0")
+CORS_ORIGINS     = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")]
+USE_S3           = os.getenv("USE_S3", "false").lower() == "true"
+S3_BUCKET        = os.getenv("S3_BUCKET", "")
+MEMORY_DIR       = os.getenv("MEMORY_DIR", "../memory")
+
+# ── App ───────────────────────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -27,21 +34,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Clients ───────────────────────────────────────────────────────────────────
 bedrock_client = boto3.client(
     service_name="bedrock-runtime",
     region_name=os.getenv("DEFAULT_AWS_REGION", "eu-west-2")
 )
-
-BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "amazon.nova-lite-v1:0")
-
-CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")]
-
-USE_S3 = os.getenv("USE_S3", "false").lower() == "true"
-S3_BUCKET = os.getenv("S3_BUCKET", "")
-MEMORY_DIR = os.getenv("MEMORY_DIR", "../memory")
-
 repo = make_repo(use_s3=USE_S3, s3_bucket=S3_BUCKET, memory_dir=MEMORY_DIR)
 
+# ── Routes ────────────────────────────────────────────────────────────────────
 app.include_router(
     create_audit_router(bedrock_client, BEDROCK_MODEL_ID, repo.load, repo.save, limiter)
 )
