@@ -50,7 +50,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function ArchCard({ comp }: { comp: ArchComponent }) {
   const ss = statusStyle(comp.status);
-  const files = comp.key_files;
+  const files = comp.key_files ?? [];
   return (
     <div style={{
       background: 'var(--surface2)', borderRadius: 12,
