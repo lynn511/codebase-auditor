@@ -27,3 +27,14 @@ variable "cors_origins" {
   type        = string
   default     = "https://codebase-auditor.vercel.app"
 }
+variable "api_throttle_burst_limit" {
+  description = "API Gateway burst throttle limit"
+  type        = number
+  default     = 10
+}
+
+variable "api_throttle_rate_limit" {
+  description = "API Gateway steady-state request rate limit"
+  type        = number
+  default     = 5
+}
