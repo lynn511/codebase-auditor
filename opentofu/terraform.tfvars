@@ -6,3 +6,4 @@ api_throttle_burst_limit = 10
 api_throttle_rate_limit  = 5
 use_custom_domain        = false
 root_domain              = ""
+cors_origins = "https://codebase-auditor.vercel.app,https://codebase-auditor-git-fix-stabilize-codebase-lynnelm.vercel.app,http://localhost:3000"

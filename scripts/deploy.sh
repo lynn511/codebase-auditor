@@ -13,6 +13,7 @@ cp server.py lambda-package/
 cp audit_routes.py lambda-package/
 cp audit_context.py lambda-package/
 cp lambda_handler.py lambda-package/
+cp storage.py lambda-package/
 
 # Zip it up
 cd lambda-package
