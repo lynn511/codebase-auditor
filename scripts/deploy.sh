@@ -12,6 +12,7 @@ pip install -r requirements.txt --target lambda-package --quiet --platform manyl
 cp server.py lambda-package/
 cp audit_routes.py lambda-package/
 cp audit_context.py lambda-package/
+cp storage.py lambda-package/
 cp lambda_handler.py lambda-package/
 cp storage.py lambda-package/
 
