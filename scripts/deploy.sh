@@ -19,7 +19,7 @@ if [ "$WORKSPACE" = "production" ]; then
   echo "⚠️  Deploying to PRODUCTION. Press Ctrl+C within 5 seconds to abort."
   sleep 5
 else
-  VAR_FILE="terraform.tfvars"
+  VAR_FILE="terraform.tfvars.staging"
 fi
 
 # ── Build Lambda package ──────────────────────────────────────────────────────
