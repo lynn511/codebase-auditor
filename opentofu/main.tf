@@ -1,7 +1,7 @@
 data "aws_caller_identity" "current" {}
 
 locals {
-  name = var.project_name
+  name = "${var.project_name}-${terraform.workspace}"
 }
 
 # ── S3 bucket for conversation memory ────────────────────────────────────────
