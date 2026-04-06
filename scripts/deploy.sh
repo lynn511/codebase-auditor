@@ -1,26 +1,36 @@
 #!/bin/bash
 set -e
 
-# ── Workspace guard ───────────────────────────────────────────────────────────
+# ── Environment selection ─────────────────────────────────────────────────────
+echo "Where do you want to deploy?"
+echo "  1) staging"
+echo "  2) production"
+read -p "Enter 1 or 2: " CHOICE
+
+case $CHOICE in
+  1)
+    TARGET="staging"
+    VAR_FILE="terraform.tfvars.staging"
+    ;;
+  2)
+    TARGET="production"
+    VAR_FILE="terraform.tfvars.production"
+    read -p "You are deploying to PRODUCTION. Type 'production' to confirm: " CONFIRM
+    if [ "$CONFIRM" != "production" ]; then
+      echo "Aborted."
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Invalid choice. Aborted."
+    exit 1
+    ;;
+esac
+
+# ── Switch to correct workspace ───────────────────────────────────────────────
 cd "$(dirname "$0")/../opentofu"
-WORKSPACE=$(tofu workspace show)
-
-echo "▶ Target workspace: $WORKSPACE"
-
-if [ "$WORKSPACE" = "default" ]; then
-  echo "ERROR: You are on the default workspace. Switch to staging or production first."
-  echo "  tofu workspace select staging"
-  echo "  tofu workspace select production"
-  exit 1
-fi
-
-if [ "$WORKSPACE" = "production" ]; then
-  VAR_FILE="terraform.tfvars.production"
-  echo "⚠️  Deploying to PRODUCTION. Press Ctrl+C within 5 seconds to abort."
-  sleep 5
-else
-  VAR_FILE="terraform.tfvars.staging"
-fi
+tofu workspace select "$TARGET"
+echo "▶ Deploying to workspace: $TARGET"
 
 # ── Build Lambda package ──────────────────────────────────────────────────────
 cd ../backend
@@ -44,11 +54,11 @@ echo "✓ Lambda package built"
 
 # ── Deploy infrastructure ─────────────────────────────────────────────────────
 cd ../opentofu
-echo "▶ Deploying infrastructure to workspace: $WORKSPACE"
+echo "▶ Deploying infrastructure..."
 tofu init -upgrade -input=false
 tofu apply -auto-approve -input=false -var-file="$VAR_FILE"
 
 echo ""
-echo "Deployment complete! [$WORKSPACE]"
+echo "✅ Deployment complete! [$TARGET]"
 echo "API URL:"
 tofu output api_url
