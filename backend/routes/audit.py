@@ -5,7 +5,7 @@ import uuid
 import json
 from datetime import datetime
 
-from services.audit import audit_system_prompt, audit_ingest_prompt
+from services.audit import _build_ingest_user_message, _call_bedrock_audit
 
 
 class FilePayload(BaseModel):
@@ -35,119 +35,6 @@ class AuditChatResponse(BaseModel):
     session_id: str
 
 
-MAX_CONVERSATION_MESSAGES = 20
-MAX_FILE_CHARS = 8000
-
-
-def _safe_text(value) -> str:
-    if value is None:
-        return ""
-    if not isinstance(value, str):
-        value = str(value)
-    return value.strip()
-
-
-def _build_ingest_user_message(req: AuditStartRequest) -> str:
-    file_tree_str = "\n".join(req.file_tree)
-
-    sampled_parts = []
-    for f in req.sampled_files:
-        content = _safe_text(f.content)[:MAX_FILE_CHARS]
-        sampled_parts.append(f"\n--- FILE: {f.path} ---\n{content}")
-
-    sampled_str = "\n".join(sampled_parts)
-    return audit_ingest_prompt(req.repo, file_tree_str, sampled_str, req.total_files)
-
-
-def _extract_bedrock_text(response: dict) -> str:
-    try:
-        content = response["output"]["message"]["content"]
-        text_parts = []
-
-        for block in content:
-            if isinstance(block, dict) and "text" in block:
-                text_parts.append(block["text"])
-
-        return "\n".join(text_parts).strip()
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Could not parse Bedrock response: {str(e)}"
-        )
-
-
-def _call_bedrock_audit(
-    bedrock_client,
-    model_id: str,
-    conversation,
-    user_message: str,
-    is_first_turn: bool = False
-) -> str:
-    from botocore.exceptions import ClientError
-
-    messages = []
-
-    for msg in conversation[-MAX_CONVERSATION_MESSAGES:]:
-        role = msg.get("role")
-        content = _safe_text(msg.get("content"))
-
-        if role not in {"user", "assistant"}:
-            continue
-        if not content:
-            continue
-
-        messages.append({
-            "role": role,
-            "content": [{"text": content}]
-        })
-
-    user_message = _safe_text(user_message)
-    if not user_message:
-        raise HTTPException(status_code=400, detail="Empty user message")
-
-    messages.append({
-        "role": "user",
-        "content": [{"text": user_message}]
-    })
-
-    try:
-        response = bedrock_client.converse(
-            modelId=model_id,
-            system=[{"text": audit_system_prompt()}],
-            messages=messages,
-            inferenceConfig={
-                "maxTokens": 4000 if is_first_turn else 2000,
-                "temperature": 0.3 if is_first_turn else 0.7,
-                "topP": 0.9,
-            },
-        )
-        return _extract_bedrock_text(response)
-
-    except ClientError as e:
-        error = e.response.get("Error", {})
-        code = error.get("Code", "UnknownError")
-        message = error.get("Message", str(e))
-
-        if code == "ValidationException":
-            raise HTTPException(
-                status_code=400,
-                detail=f"Bedrock validation error: {message}"
-            )
-        elif code == "AccessDeniedException":
-            raise HTTPException(
-                status_code=403,
-                detail=f"Access denied to Bedrock model: {message}"
-            )
-        else:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Bedrock error ({code}): {message}"
-            )
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected Bedrock error: {str(e)}")
-
-
 def create_audit_router(bedrock_client, model_id: str, load_conv, save_conv, limiter):
     router = APIRouter(prefix="/audit", tags=["audit"])
 
@@ -155,7 +42,9 @@ def create_audit_router(bedrock_client, model_id: str, load_conv, save_conv, lim
     @limiter.limit("5/minute")
     async def audit_start(request: Request, req: AuditStartRequest):
         session_id = str(uuid.uuid4())
-        user_message = _build_ingest_user_message(req)
+        user_message = _build_ingest_user_message(
+            req.repo, req.file_tree, req.sampled_files, req.total_files
+        )
 
         raw_response = _call_bedrock_audit(
             bedrock_client=bedrock_client,

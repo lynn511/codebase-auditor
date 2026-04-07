@@ -1,7 +1,16 @@
-"""System and user prompts for the repo audit flow (used by routes/audit)."""
+"""System and user prompts and Bedrock invocation logic for the repo audit flow."""
 
 from datetime import datetime
+from typing import List
 
+from fastapi import HTTPException
+
+
+MAX_CONVERSATION_MESSAGES = 20
+MAX_FILE_CHARS = 8000
+
+
+# ── Prompts ───────────────────────────────────────────────────────────────────
 
 def audit_system_prompt() -> str:
     return """You are an expert AI/MLOps engineer performing repository audits.
@@ -120,3 +129,116 @@ F  = Broken, insecure, or completely unstructured
 Set stats.critical / warnings / info / recommendations to match the actual counts in your issues and recommendations arrays. Assign sequential priority numbers (1, 2, 3...) to recommendations.
 Respond with ONLY the JSON object.
 """
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _safe_text(value) -> str:
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        value = str(value)
+    return value.strip()
+
+
+def _build_ingest_user_message(
+    repo: str, file_tree: List[str], sampled_files, total_files: int
+) -> str:
+    file_tree_str = "\n".join(file_tree)
+
+    sampled_parts = []
+    for f in sampled_files:
+        content = _safe_text(f.content)[:MAX_FILE_CHARS]
+        sampled_parts.append(f"\n--- FILE: {f.path} ---\n{content}")
+
+    sampled_str = "\n".join(sampled_parts)
+    return audit_ingest_prompt(repo, file_tree_str, sampled_str, total_files)
+
+
+def _extract_bedrock_text(response: dict) -> str:
+    try:
+        content = response["output"]["message"]["content"]
+        text_parts = []
+
+        for block in content:
+            if isinstance(block, dict) and "text" in block:
+                text_parts.append(block["text"])
+
+        return "\n".join(text_parts).strip()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not parse Bedrock response: {str(e)}"
+        )
+
+
+def _call_bedrock_audit(
+    bedrock_client,
+    model_id: str,
+    conversation,
+    user_message: str,
+    is_first_turn: bool = False
+) -> str:
+    from botocore.exceptions import ClientError
+
+    messages = []
+
+    for msg in conversation[-MAX_CONVERSATION_MESSAGES:]:
+        role = msg.get("role")
+        content = _safe_text(msg.get("content"))
+
+        if role not in {"user", "assistant"}:
+            continue
+        if not content:
+            continue
+
+        messages.append({
+            "role": role,
+            "content": [{"text": content}]
+        })
+
+    user_message = _safe_text(user_message)
+    if not user_message:
+        raise HTTPException(status_code=400, detail="Empty user message")
+
+    messages.append({
+        "role": "user",
+        "content": [{"text": user_message}]
+    })
+
+    try:
+        response = bedrock_client.converse(
+            modelId=model_id,
+            system=[{"text": audit_system_prompt()}],
+            messages=messages,
+            inferenceConfig={
+                "maxTokens": 4000 if is_first_turn else 2000,
+                "temperature": 0.3 if is_first_turn else 0.7,
+                "topP": 0.9,
+            },
+        )
+        return _extract_bedrock_text(response)
+
+    except ClientError as e:
+        error = e.response.get("Error", {})
+        code = error.get("Code", "UnknownError")
+        message = error.get("Message", str(e))
+
+        if code == "ValidationException":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Bedrock validation error: {message}"
+            )
+        elif code == "AccessDeniedException":
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access denied to Bedrock model: {message}"
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Bedrock error ({code}): {message}"
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected Bedrock error: {str(e)}")
