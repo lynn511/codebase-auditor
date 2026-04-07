@@ -5,7 +5,7 @@ import uuid
 import json
 from datetime import datetime
 
-from services.audit import _build_ingest_user_message, _call_bedrock_audit
+from services.audit import _build_ingest_user_message, _call_bedrock_audit, BedrockError, ServiceError
 
 
 class FilePayload(BaseModel):
@@ -46,13 +46,16 @@ def create_audit_router(bedrock_client, model_id: str, load_conv, save_conv, lim
             req.repo, req.file_tree, req.sampled_files, req.total_files
         )
 
-        raw_response = _call_bedrock_audit(
-            bedrock_client=bedrock_client,
-            model_id=model_id,
-            conversation=[],
-            user_message=user_message,
-            is_first_turn=True,
-        )
+        try:
+            raw_response = _call_bedrock_audit(
+                bedrock_client=bedrock_client,
+                model_id=model_id,
+                conversation=[],
+                user_message=user_message,
+                is_first_turn=True,
+            )
+        except (BedrockError, ServiceError) as e:
+            raise HTTPException(status_code=e.status_code, detail=str(e))
 
         try:
             clean = raw_response.strip()
@@ -97,13 +100,16 @@ def create_audit_router(bedrock_client, model_id: str, load_conv, save_conv, lim
                 detail="Session not found. Run /audit/start first."
             )
 
-        response_text = _call_bedrock_audit(
-            bedrock_client=bedrock_client,
-            model_id=model_id,
-            conversation=conversation,
-            user_message=req.message,
-            is_first_turn=False,
-        )
+        try:
+            response_text = _call_bedrock_audit(
+                bedrock_client=bedrock_client,
+                model_id=model_id,
+                conversation=conversation,
+                user_message=req.message,
+                is_first_turn=False,
+            )
+        except (BedrockError, ServiceError) as e:
+            raise HTTPException(status_code=e.status_code, detail=str(e))
 
         conversation.append({
             "role": "user",
