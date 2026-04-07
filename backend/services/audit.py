@@ -1,4 +1,4 @@
-"""System and user prompts for the repo audit flow (used by audit_routes)."""
+"""System and user prompts for the repo audit flow (used by routes/audit)."""
 
 from datetime import datetime
 
