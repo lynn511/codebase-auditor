@@ -3,7 +3,19 @@
 from datetime import datetime
 from typing import List
 
-from fastapi import HTTPException
+
+class BedrockError(RuntimeError):
+    """Raised when the Bedrock API returns an error."""
+    def __init__(self, message: str, status_code: int = 500):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+class ServiceError(RuntimeError):
+    """Raised for general service-layer errors."""
+    def __init__(self, message: str, status_code: int = 500):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 MAX_CONVERSATION_MESSAGES = 20
@@ -166,10 +178,7 @@ def _extract_bedrock_text(response: dict) -> str:
 
         return "\n".join(text_parts).strip()
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Could not parse Bedrock response: {str(e)}"
-        )
+        raise ServiceError(f"Could not parse Bedrock response: {str(e)}")
 
 
 def _call_bedrock_audit(
@@ -199,7 +208,7 @@ def _call_bedrock_audit(
 
     user_message = _safe_text(user_message)
     if not user_message:
-        raise HTTPException(status_code=400, detail="Empty user message")
+        raise ServiceError("Empty user message", status_code=400)
 
     messages.append({
         "role": "user",
@@ -225,20 +234,13 @@ def _call_bedrock_audit(
         message = error.get("Message", str(e))
 
         if code == "ValidationException":
-            raise HTTPException(
-                status_code=400,
-                detail=f"Bedrock validation error: {message}"
-            )
+            raise BedrockError(f"Bedrock validation error: {message}", status_code=400)
         elif code == "AccessDeniedException":
-            raise HTTPException(
-                status_code=403,
-                detail=f"Access denied to Bedrock model: {message}"
-            )
+            raise BedrockError(f"Access denied to Bedrock model: {message}", status_code=403)
         else:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Bedrock error ({code}): {message}"
-            )
+            raise BedrockError(f"Bedrock error ({code}): {message}")
 
+    except BedrockError:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected Bedrock error: {str(e)}")
+        raise BedrockError(f"Unexpected Bedrock error: {str(e)}")
