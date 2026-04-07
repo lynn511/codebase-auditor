@@ -5,7 +5,7 @@ import uuid
 import json
 from datetime import datetime
 
-from audit_context import audit_system_prompt, audit_ingest_prompt
+from services.audit import audit_system_prompt, audit_ingest_prompt
 
 
 class FilePayload(BaseModel):
