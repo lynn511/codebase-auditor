@@ -7,7 +7,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
-from audit_routes import create_audit_router
+from routes.audit import create_audit_router
 from storage.repo import make_repo
 
 load_dotenv()
