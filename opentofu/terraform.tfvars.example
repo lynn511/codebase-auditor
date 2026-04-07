@@ -1,8 +1,8 @@
-project_name             = "code-auditor"
+project_name             = "your-project-name"
 bedrock_model_id         = "eu.amazon.nova-lite-v1:0"
 lambda_timeout           = 60
 api_throttle_burst_limit = 10
 api_throttle_rate_limit  = 5
 use_custom_domain        = false
 root_domain              = ""
-cors_origins             = "https://codebase-auditor.vercel.app,http://localhost:3000"
+cors_origins             = "https://your-production-domain.vercel.app,http://localhost:3000"
