@@ -9,8 +9,11 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from routes.audit import create_audit_router
 from storage.repo import make_repo
+from core.logging_config import setup_logging
+from core.middleware import RequestLoggingMiddleware
 
 load_dotenv()
+setup_logging()
 
 # ── Config ────────────────────────────────────────────────────────────────────
 BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "amazon.nova-lite-v1:0")
@@ -33,6 +36,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestLoggingMiddleware)
 
 # ── Clients ───────────────────────────────────────────────────────────────────
 bedrock_client = boto3.client(
