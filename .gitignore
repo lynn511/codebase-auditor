@@ -40,3 +40,4 @@ Thumbs.db
 # AWS
 .aws/frontend/.env.local
 backend/data/
+opentofu/terraform.tfvars.staging
