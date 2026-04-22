@@ -38,3 +38,24 @@ variable "api_throttle_rate_limit" {
   type        = number
   default     = 5
 }
+
+variable "supabase_url" {
+  description = "Supabase project URL (staging only)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "supabase_publishable_key" {
+  description = "Supabase publishable key (replaces anon key, safe for frontend)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "supabase_secret_key" {
+  description = "Supabase secret key (replaces service role key, backend only)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

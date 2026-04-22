@@ -97,11 +97,14 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      DEFAULT_AWS_REGION = var.aws_region
-      BEDROCK_MODEL_ID   = var.bedrock_model_id
-      USE_S3             = "true"
-      S3_BUCKET          = aws_s3_bucket.memory.bucket
-      CORS_ORIGINS       = var.cors_origins
+      DEFAULT_AWS_REGION        = var.aws_region
+      BEDROCK_MODEL_ID          = var.bedrock_model_id
+      USE_S3                    = "true"
+      S3_BUCKET                 = aws_s3_bucket.memory.bucket
+      CORS_ORIGINS              = var.cors_origins
+      SUPABASE_URL              = var.supabase_url
+      SUPABASE_PUBLISHABLE_KEY  = var.supabase_publishable_key
+      SUPABASE_SECRET_KEY       = var.supabase_secret_key
     }
   }
 
