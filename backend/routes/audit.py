@@ -1,11 +1,15 @@
-from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
-from typing import List
+import logging
 import uuid
 import json
 from datetime import datetime
+from typing import List
+
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel
 
 from services.audit import _build_ingest_user_message, _call_bedrock_audit, BedrockError, ServiceError
+
+logger = logging.getLogger(__name__)
 
 
 class FilePayload(BaseModel):
@@ -42,6 +46,11 @@ def create_audit_router(bedrock_client, model_id: str, load_conv, save_conv, lim
     @limiter.limit("5/minute")
     async def audit_start(request: Request, req: AuditStartRequest):
         session_id = str(uuid.uuid4())
+        logger.info("audit started", extra={
+            "session_id": session_id,
+            "request_id": getattr(request.state, "request_id", None),
+            "repo": req.repo,
+        })
         user_message = _build_ingest_user_message(
             req.repo, req.file_tree, req.sampled_files, req.total_files
         )
@@ -94,6 +103,10 @@ def create_audit_router(bedrock_client, model_id: str, load_conv, save_conv, lim
     @limiter.limit("30/minute")
     async def audit_chat(request: Request, req: AuditChatRequest):
         conversation = load_conv(req.session_id)
+        logger.info("chat message received", extra={
+            "session_id": req.session_id,
+            "request_id": getattr(request.state, "request_id", None),
+        })
         if not conversation:
             raise HTTPException(
                 status_code=404,
