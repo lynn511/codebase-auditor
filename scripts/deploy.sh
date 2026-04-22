@@ -42,9 +42,6 @@ pip install -r requirements.txt --target lambda-package --quiet \
   --python-version 3.12 --only-binary=:all:
 
 cp server.py lambda-package/
-cp audit_routes.py lambda-package/
-cp audit_context.py lambda-package/
-cp storage.py lambda-package/
 cp lambda_handler.py lambda-package/
 
 cd lambda-package

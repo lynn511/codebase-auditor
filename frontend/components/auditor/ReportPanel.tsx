@@ -117,7 +117,7 @@ function IssueItem({ issue }: { issue: AuditIssue }) {
   );
 }
 
-function RecItem({ rec, index }: { rec: Recommendation; index: number }) {
+function RecItem({ rec }: { rec: Recommendation }) {
   const [open, setOpen] = useState(false);
   const ic = impactStyle(rec.impact);
   return (
@@ -262,7 +262,7 @@ export default function ReportPanel({ report }: { report: AuditReport }) {
         <Card>
           <SectionLabel>Recommendations</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {recs.map((rec, i) => <RecItem key={i} rec={rec} index={i} />)}
+            {recs.map((rec, i) => <RecItem key={i} rec={rec} />)}
           </div>
         </Card>
       )}
