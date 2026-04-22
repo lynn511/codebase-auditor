@@ -24,6 +24,17 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "memory" {
   }
 }
 
+# ── CloudWatch log group ──────────────────────────────────────────────────────
+resource "aws_cloudwatch_log_group" "lambda" {
+  name              = "/aws/lambda/${local.name}-api"
+  retention_in_days = 30
+
+  tags = {
+    Project   = local.name
+    ManagedBy = "opentofu"
+  }
+}
+
 # ── IAM role for Lambda ───────────────────────────────────────────────────────
 resource "aws_iam_role" "lambda" {
   name = "${local.name}-lambda-role"
@@ -48,11 +59,13 @@ resource "aws_iam_role_policy" "lambda" {
       {
         Effect = "Allow"
         Action = [
-          "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:*:*:*"
+        Resource = [
+          "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.name}-api",
+          "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.name}-api:*"
+        ]
       },
       {
         Effect   = "Allow"
@@ -91,6 +104,8 @@ resource "aws_lambda_function" "api" {
       CORS_ORIGINS       = var.cors_origins
     }
   }
+
+  depends_on = [aws_cloudwatch_log_group.lambda]
 
   tags = {
     Project   = local.name
