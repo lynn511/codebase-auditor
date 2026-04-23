@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import AuditorShell from '@/components/auditor/AuditorShell';
+import AuthButton from '@/components/auth/AuthButton';
 
 export const metadata: Metadata = {
   title: 'Codebase Auditor',
@@ -12,7 +13,7 @@ export default function AuditorPage() {
       background: '#0e0f11',
       fontFamily: "'Syne', sans-serif",
     }}>
-      {/* Header — centered */}
+      {/* Header */}
       <header style={{
         flexShrink: 0,
         borderBottom: '1px solid rgba(255,255,255,0.07)',
@@ -51,6 +52,10 @@ export default function AuditorPage() {
               architecture · mlops · health scoring
             </div>
           </div>
+        </div>
+
+        <div style={{ position: 'absolute', right: 32 }}>
+          <AuthButton />
         </div>
       </header>
 

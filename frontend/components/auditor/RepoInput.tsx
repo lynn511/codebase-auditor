@@ -1,10 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import Script from 'next/script';
+import { useState, useRef, useCallback } from 'react';
 import { parseRepo } from '@/lib/github';
 
+declare global {
+  interface Window {
+    turnstile: {
+      render: (element: HTMLElement, options: {
+        sitekey: string;
+        callback: (token: string) => void;
+        'expired-callback': () => void;
+        'error-callback': () => void;
+        theme?: string;
+      }) => string;
+      reset: (widgetId: string) => void;
+    };
+  }
+}
+
 interface RepoInputProps {
-  onSubmit: (repo: string) => void;
+  onSubmit: (repo: string, turnstileToken: string) => void;
   isLoading: boolean;
 }
 
@@ -18,16 +34,39 @@ const EXAMPLES = [
 export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
   const [value, setValue] = useState('');
   const [error, setError] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const widgetContainerRef = useRef<HTMLDivElement>(null);
+
+  const initTurnstile = useCallback(() => {
+    if (widgetContainerRef.current && window.turnstile) {
+      window.turnstile.render(widgetContainerRef.current, {
+        sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
+        callback: (token) => setTurnstileToken(token),
+        'expired-callback': () => setTurnstileToken(''),
+        'error-callback': () => setTurnstileToken(''),
+        theme: 'dark',
+      });
+    }
+  }, []);
 
   const handleSubmit = () => {
     const repo = parseRepo(value);
     if (!repo) { setError('Enter a valid GitHub repo (e.g. owner/repo or full URL)'); return; }
+    if (!turnstileToken) { setError('Please complete the security check below'); return; }
     setError('');
-    onSubmit(repo);
+    onSubmit(repo, turnstileToken);
   };
+
+  const canSubmit = !isLoading && !!value.trim() && !!turnstileToken;
 
   return (
     <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v1/api.js?render=explicit"
+        strategy="lazyOnload"
+        onLoad={initTurnstile}
+      />
+
       {/* Input card */}
       <div style={{
         background: 'var(--surface)',
@@ -44,7 +83,7 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
             type="text"
             value={value}
             onChange={e => { setValue(e.target.value); setError(''); }}
-            onKeyDown={e => e.key === 'Enter' && !isLoading && handleSubmit()}
+            onKeyDown={e => e.key === 'Enter' && canSubmit && handleSubmit()}
             placeholder="owner/repo  or  https://github.com/owner/repo"
             disabled={isLoading}
             autoFocus
@@ -56,9 +95,9 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
           />
           <button
             onClick={handleSubmit}
-            disabled={isLoading || !value.trim()}
+            disabled={!canSubmit}
             style={{
-              background: isLoading || !value.trim() ? 'rgba(212,245,90,0.3)' : 'var(--accent)',
+              background: canSubmit ? 'var(--accent)' : 'rgba(212,245,90,0.3)',
               color: '#0e0f11',
               border: 'none',
               borderRadius: 10,
@@ -66,7 +105,7 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
               fontSize: 13,
               fontWeight: 700,
               fontFamily: 'var(--font)',
-              cursor: isLoading || !value.trim() ? 'not-allowed' : 'pointer',
+              cursor: canSubmit ? 'pointer' : 'not-allowed',
               letterSpacing: '0.02em',
               transition: 'all 0.15s',
               margin: 4,
@@ -81,6 +120,11 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
       {error && (
         <p style={{ marginTop: 8, fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--red)' }}>{error}</p>
       )}
+
+      {/* Turnstile security widget */}
+      <div style={{ marginTop: 12 }}>
+        <div ref={widgetContainerRef} />
+      </div>
 
       {/* Example chips */}
       <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>

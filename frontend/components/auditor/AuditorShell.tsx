@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ingestRepo, type ScanStage } from '@/lib/github';
 import type { AuditReport } from '@/lib/audit-types';
 import { API_URL } from '@/lib/config';
+import { verifyTurnstileAndCreateSession } from '@/lib/actions/auth';
 import type { ScanPhase } from './ScanProgress';
 import RepoInput from './RepoInput';
 import ScanProgress from './ScanProgress';
@@ -19,19 +20,23 @@ function toScanPhase(s: ScanStage): ScanPhase {
 }
 
 export default function AuditorShell() {
-  const [appPhase, setAppPhase]     = useState<AppPhase>('idle');
-  const [scanPhase, setScanPhase]   = useState<ScanPhase>('fetching-tree');
-  const [currentRepo, setCurrentRepo] = useState('');
-  const [report, setReport]         = useState<AuditReport | null>(null);
-  const [sessionId, setSessionId]   = useState('');
-  const [error, setError]           = useState('');
-  const [chatOpen, setChatOpen]     = useState(false);
+  const [appPhase, setAppPhase]         = useState<AppPhase>('idle');
+  const [scanPhase, setScanPhase]       = useState<ScanPhase>('fetching-tree');
+  const [currentRepo, setCurrentRepo]   = useState('');
+  const [report, setReport]             = useState<AuditReport | null>(null);
+  const [sessionId, setSessionId]       = useState('');
+  const [error, setError]               = useState('');
+  const [chatOpen, setChatOpen]         = useState(false);
+  const [turnstileKey, setTurnstileKey] = useState(0);
 
-  const runAudit = async (repo: string) => {
+  const runAudit = async (repo: string, turnstileToken: string) => {
     setCurrentRepo(repo);
     setAppPhase('scanning');
     setError(''); setReport(null); setSessionId(''); setChatOpen(false);
     try {
+      const authResult = await verifyTurnstileAndCreateSession(turnstileToken);
+      if ('error' in authResult) throw new Error(authResult.error);
+
       const ingestion = await ingestRepo(repo, (s: ScanStage) => setScanPhase(toScanPhase(s)));
       setScanPhase('analyzing');
       const res = await fetch(`${API_URL}/audit/start`, {
@@ -42,6 +47,7 @@ export default function AuditorShell() {
           total_files: ingestion.totalFiles,
           file_tree: ingestion.fileTree,
           sampled_files: ingestion.sampledFiles,
+          user_id: authResult.userId,
         }),
       });
       if (!res.ok) {
@@ -56,12 +62,14 @@ export default function AuditorShell() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setAppPhase('error');
+      setTurnstileKey(k => k + 1);
     }
   };
 
   const reset = () => {
     setAppPhase('idle'); setReport(null);
     setSessionId(''); setError(''); setCurrentRepo(''); setChatOpen(false);
+    setTurnstileKey(k => k + 1);
   };
 
   return (
@@ -73,7 +81,7 @@ export default function AuditorShell() {
         borderBottom: '1px solid rgba(255,255,255,0.07)',
         background: 'radial-gradient(ellipse 80% 120% at 50% 0%, rgba(212,245,90,0.03) 0%, transparent 70%)',
       }}>
-        <RepoInput onSubmit={runAudit} isLoading={appPhase === 'scanning'} />
+        <RepoInput key={turnstileKey} onSubmit={runAudit} isLoading={appPhase === 'scanning'} />
       </div>
 
       {/* Idle */}
