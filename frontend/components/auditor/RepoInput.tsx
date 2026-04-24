@@ -1,7 +1,7 @@
 'use client';
 
 import Script from 'next/script';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { parseRepo } from '@/lib/github';
 
 declare global {
@@ -16,6 +16,7 @@ declare global {
       }) => string;
       reset: (widgetId: string) => void;
     };
+    onloadTurnstileCallback: () => void;
   }
 }
 
@@ -49,6 +50,10 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
     }
   }, []);
 
+  useEffect(() => {
+    window.onloadTurnstileCallback = initTurnstile;
+  }, [initTurnstile]);
+
   const handleSubmit = () => {
     const repo = parseRepo(value);
     if (!repo) { setError('Enter a valid GitHub repo (e.g. owner/repo or full URL)'); return; }
@@ -62,9 +67,8 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
   return (
     <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
       <Script
-        src="https://challenges.cloudflare.com/turnstile/v1/api.js?render=explicit"
-        strategy="lazyOnload"
-        onLoad={initTurnstile}
+        src="https://challenges.cloudflare.com/turnstile/v1/api.js?onload=onloadTurnstileCallback&render=explicit"
+        strategy="afterInteractive"
       />
 
       {/* Input card */}

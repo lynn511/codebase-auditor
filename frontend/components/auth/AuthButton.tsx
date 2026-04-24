@@ -13,17 +13,25 @@ export default function AuthButton() {
   const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
+    let unsubscribe: (() => void) | undefined;
+    try {
+      console.log('supabase url:', process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30))
+      console.log('supabase key:', process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.slice(0, 20))
+      const supabase = createClient();
 
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-    });
+      supabase.auth.getSession().then(({ data }) => {
+        setUser(data.session?.user ?? null);
+      });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null);
-    });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+        setUser(session?.user ?? null);
+      });
 
-    return () => subscription.unsubscribe();
+      unsubscribe = () => subscription.unsubscribe();
+    } catch {
+      // Supabase env vars not set in this environment — render unauthenticated state
+    }
+    return () => unsubscribe?.();
   }, []);
 
   const handleSignIn = async () => {
