@@ -15,8 +15,6 @@ export default function AuthButton() {
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     try {
-      console.log('supabase url:', process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30))
-      console.log('supabase key:', process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.slice(0, 20))
       const supabase = createClient();
 
       supabase.auth.getSession().then(({ data }) => {

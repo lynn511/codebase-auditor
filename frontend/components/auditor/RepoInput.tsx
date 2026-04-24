@@ -67,7 +67,7 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
   return (
     <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
       <Script
-        src="https://challenges.cloudflare.com/turnstile/v1/api.js?onload=onloadTurnstileCallback&render=explicit"
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback&render=explicit"
         strategy="afterInteractive"
       />
 
