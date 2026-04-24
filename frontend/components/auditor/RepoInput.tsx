@@ -125,11 +125,6 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
         <p style={{ marginTop: 8, fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--red)' }}>{error}</p>
       )}
 
-      {/* Turnstile security widget */}
-      <div style={{ marginTop: 12 }}>
-        <div ref={widgetContainerRef} />
-      </div>
-
       {/* Example chips */}
       <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 11, color: 'var(--dim)', fontFamily: 'var(--mono)' }}>try →</span>
@@ -160,6 +155,11 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
             {ex}
           </button>
         ))}
+      </div>
+
+      {/* Turnstile security widget */}
+      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', opacity: 0.7 }}>
+        <div ref={widgetContainerRef} />
       </div>
     </div>
   );

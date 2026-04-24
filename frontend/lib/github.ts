@@ -37,14 +37,7 @@ export interface FilePayload {
   // ── Fetch the full repo file tree ─────────────────────────────────────────────
   
   export async function fetchRepoTree(repo: string): Promise<string[]> {
-    const res = await fetch(
-        `https://api.github.com/repos/${repo}/git/trees/HEAD?recursive=1`,
-        {
-          headers: process.env.NEXT_PUBLIC_GITHUB_TOKEN
-            ? { Authorization: `Bearer ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}` }
-            : {},
-        }
-      );
+    const res = await fetch(`/api/github/tree?repo=${encodeURIComponent(repo)}`);
 
     if (res.status === 404) throw new Error(`Repository "${repo}" not found or is private.`);
     if (res.status === 403) throw new Error('GitHub API rate limit exceeded. Wait a moment and try again.');
@@ -104,12 +97,7 @@ export interface FilePayload {
   async function fetchFile(repo: string, path: string): Promise<string | null> {
     try {
         const res = await fetch(
-            `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}`,
-            {
-              headers: process.env.NEXT_PUBLIC_GITHUB_TOKEN
-                ? { Authorization: `Bearer ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}` }
-                : {},
-            }
+            `/api/github/file?repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(path)}`
           );
       if (!res.ok) return null;
       const data = await res.json();
