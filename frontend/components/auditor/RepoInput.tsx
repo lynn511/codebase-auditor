@@ -62,7 +62,13 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
     setError('');
     onSubmit(repo, turnstileToken);
     setTurnstileToken('');
-    if (widgetIdRef.current && window.turnstile) { window.turnstile.reset(widgetIdRef.current); }
+    if (widgetIdRef.current && window.turnstile) {
+      try {
+        window.turnstile.reset(widgetIdRef.current);
+      } catch {
+        // widget was unmounted by parent remount — safe to ignore
+      }
+    }
   };
 
   const canSubmit = !isLoading && !!value.trim() && !!turnstileToken;
