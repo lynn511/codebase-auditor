@@ -37,10 +37,11 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
   const [error, setError] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
   const widgetContainerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | null>(null);
 
   const initTurnstile = useCallback(() => {
     if (widgetContainerRef.current && window.turnstile) {
-      window.turnstile.render(widgetContainerRef.current, {
+      widgetIdRef.current = window.turnstile.render(widgetContainerRef.current, {
         sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
         callback: (token) => setTurnstileToken(token),
         'expired-callback': () => setTurnstileToken(''),
@@ -60,6 +61,8 @@ export default function RepoInput({ onSubmit, isLoading }: RepoInputProps) {
     if (!turnstileToken) { setError('Please complete the security check below'); return; }
     setError('');
     onSubmit(repo, turnstileToken);
+    setTurnstileToken('');
+    if (widgetIdRef.current && window.turnstile) { window.turnstile.reset(widgetIdRef.current); }
   };
 
   const canSubmit = !isLoading && !!value.trim() && !!turnstileToken;
