@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { ingestRepo, type ScanStage } from '@/lib/github';
 import type { AuditReport } from '@/lib/audit-types';
-import { API_URL } from '@/lib/config';
 import { verifyTurnstileAndCreateSession } from '@/lib/actions/auth';
 import type { ScanPhase } from './ScanProgress';
 import RepoInput from './RepoInput';
@@ -39,7 +38,7 @@ export default function AuditorShell() {
 
       const ingestion = await ingestRepo(repo, (s: ScanStage) => setScanPhase(toScanPhase(s)));
       setScanPhase('analyzing');
-      const res = await fetch(`${API_URL}/audit/start`, {
+      const res = await fetch('/api/audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
