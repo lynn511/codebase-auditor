@@ -43,6 +43,10 @@ pip install -r requirements.txt --target lambda-package --quiet \
 
 cp server.py lambda-package/
 cp lambda_handler.py lambda-package/
+cp -r routes lambda-package/
+cp -r services lambda-package/
+cp -r storage lambda-package/
+cp -r core lambda-package/
 
 cd lambda-package
 zip -r ../lambda-deployment.zip . --quiet
