@@ -18,8 +18,9 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             );
-          } catch {
-            // Server Component context — proxy handles the actual cookie writes
+          } catch (e) {
+            // Server Component context — cookie writes are handled by Route Handlers.
+            console.warn('[supabase/server] setAll skipped:', e);
           }
         },
       },
