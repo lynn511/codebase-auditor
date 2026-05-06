@@ -40,13 +40,15 @@ export default function AuditorShell() {
       setScanPhase('analyzing');
       const res = await fetch('/api/audit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authResult.accessToken}`,
+        },
         body: JSON.stringify({
           repo: ingestion.repo,
           total_files: ingestion.totalFiles,
           file_tree: ingestion.fileTree,
           sampled_files: ingestion.sampledFiles,
-          user_id: authResult.userId,
         }),
       });
       if (!res.ok) {
