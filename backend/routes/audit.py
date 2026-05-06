@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from services.audit import _build_ingest_user_message, _call_bedrock_audit, BedrockError, ServiceError
 from core.auth import get_user_id
+from services.persist import save_audit
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,9 @@ def create_audit_router(bedrock_client, model_id: str, load_conv, save_conv, lim
             },
         ]
         save_conv(session_id, conversation)
+
+        if user_id:
+            save_audit(user_id, req.repo, report)
 
         return AuditStartResponse(session_id=session_id, report=report)
 
