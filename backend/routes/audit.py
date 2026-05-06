@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from services.audit import _build_ingest_user_message, _call_bedrock_audit, BedrockError, ServiceError
+from core.auth import get_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +46,15 @@ def create_audit_router(bedrock_client, model_id: str, load_conv, save_conv, lim
     @router.post("/start", response_model=AuditStartResponse)
     @limiter.limit("5/minute")
     async def audit_start(request: Request, req: AuditStartRequest):
+        token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        user_id = get_user_id(token) if token else None
+        request.state.user_id = user_id
+
         session_id = str(uuid.uuid4())
         logger.info("audit started", extra={
             "session_id": session_id,
             "request_id": getattr(request.state, "request_id", None),
+            "user_id": user_id,
             "repo": req.repo,
         })
         user_message = _build_ingest_user_message(
