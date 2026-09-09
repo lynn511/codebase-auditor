@@ -1,14 +1,21 @@
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+<div align="center">
+
 # Codebase Auditor
+
+**AI-powered repository auditor for public GitHub projects.**
+Paste a repo URL, get a structured health report with architecture mapping, MLOps issue detection, and an interactive follow-up chat.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-39FF14?style=flat-square)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-000000?style=flat-square&logo=vercel&logoColor=39FF14)](https://codebase-auditor.vercel.app)
+[![Article](https://img.shields.io/badge/Writeup-000000?style=flat-square&logo=medium&logoColor=39FF14)](https://medium.com/munchy-bytes/building-a-serverless-ai-tool-on-aws-fe2cfd752147)
+
+</div>
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/4ec2b9f6-81e0-453c-9fa6-fb437cfdcb53" width="32%">
   <img src="https://github.com/user-attachments/assets/86fa1710-f103-4466-b5cf-c981976f16ac" width="32%">
   <img src="https://github.com/user-attachments/assets/515c21bd-d011-4623-bd77-76ee88961d8f" width="32%">
 </p>
-
-AI-powered repository auditor for public GitHub projects.  
-Paste a repo URL, get a structured health report with architecture mapping, MLOps issue detection, and an interactive follow-up chat.
 
 ## Live Demo
 
